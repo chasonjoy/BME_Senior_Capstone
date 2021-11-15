@@ -59,7 +59,8 @@ void loop() {
   while (touchSensorReading == LOW) {
     HMDNeck.Waveform(1,145);
     HMDNeck.go();
-    delay(500);  
+    delay(500);
+    touchSensorReading = digitalRead(neckSensor_PIN);  
   }
   // 3. once touchSensorReading detects high (user activated), stop haptic motor
     //stop haptic motor
@@ -77,6 +78,7 @@ void loop() {
     HMDChest.Waveform(1,145);
     HMDChest.go();
     delay(500);
+    chestCompSensor = scale.get_units();
   }
 
   while (chestCompSensor < 125) { // if chest compression is detected but not strong enough, then have user retry
@@ -87,6 +89,7 @@ void loop() {
   audioOutput.play(5); //let user know previous compression is successful, now must perform 15 successful compressions
   int chestCompressions = 0;
   while (chestCompressions < 15) {
+    chestCompSensor = scale.get_units();
     if (chestCompSensor >= 125) {
       chestCompressions += 1;
       audioOutput.play(6); // indicate good compression;
@@ -117,6 +120,7 @@ void loop() {
     if (timerCount%3 == 0) {    // every three seconds of idle time, system lets user know to tilt head
       audioOutput.play(9);
     }
+    headTiltReading = digitalRead(headTilt_PIN);
   }
   
   // 3. next nose closure
@@ -127,7 +131,8 @@ void loop() {
   while (noseSensorReading < 23) {
     HMDMouth.Waveform(1,145);
     HMDMouth.go();
-    delay(500); 
+    delay(500);
+    noseSensorReading = analogRead(noseClosure_PIN); 
   }
   
   // 4. now breathing technique 
@@ -136,6 +141,7 @@ void loop() {
   int lungInflations = 0;
   float lungInfSensor = analogRead(lungInf_PIN);
   while (lungInflations < 2) {
+    lungInfSensor = analogRead(lungInf_PIN);
     if (lungInfSensor >= 1024) {
       lungInflations += 1;
       audioOutput.play(11); // indicate good breath;
@@ -147,10 +153,10 @@ void loop() {
     }
   }
 
-  audioOutput(13); // let users know that after two breaths, will still need to continue with compressions if patient doesn't regain consciousness
+  audioOutput.play(13); // let users know that after two breaths, will still need to continue with compressions if patient doesn't regain consciousness
   delay(5000);
   
-  audioOutput(2); // tell users that device is moving to next module
+  audioOutput.play(2); // tell users that device is moving to next module
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
