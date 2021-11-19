@@ -88,7 +88,7 @@ void loop() {
   // 3. have user perform 15 successful compressions
   audioOutput.play(5); //let user know previous compression is successful, now must perform 15 successful compressions
   int chestCompressions = 0;
-  while (chestCompressions < 15) {
+  while (chestCompressions < 30) {
     chestCompSensor = scale.get_units();
     if (chestCompSensor >= 125) {
       chestCompressions += 1;
@@ -96,7 +96,7 @@ void loop() {
       delay(5000);
     }
     else {
-      audioOutput.play(7); // indicate unsuccessful compression;
+      audioOutput.play(4); // indicate unsuccessful compression;
       delay(5000);
     }
   }
@@ -107,7 +107,7 @@ void loop() {
 
   // Head Tilt, Nose Closure, and Breathing Check
   // 1. introduce breathing technique and let users know to tilt head first
-  audioOutput.play(8);
+  audioOutput.play(7);
   delay(15000);
   
   // 2. activate haptic motor at head region to indicate user to tilt head
@@ -118,13 +118,13 @@ void loop() {
     delay(1000);
     timerCount += 1;
     if (timerCount%3 == 0) {    // every three seconds of idle time, system lets user know to tilt head
-      audioOutput.play(9);
+      audioOutput.play(8);
     }
     headTiltReading = digitalRead(headTilt_PIN);
   }
   
   // 3. next nose closure
-  audioOutput.play(10);
+  audioOutput.play(9);
   delay(10000);
   
   float noseSensorReading = analogRead(noseClosure_PIN);
