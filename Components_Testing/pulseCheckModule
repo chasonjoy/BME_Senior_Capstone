@@ -1,0 +1,59 @@
+#include <Sparkfun_DRV2605L.h>
+#include <DFRobotDFPlayerMini.h>
+#include <SoftwareSerial.h>
+
+SFE_HMD_DRV2605L HMDNeck;
+
+const int neckSensor_PIN = 52;
+const int neckHapticMotor_EN_PIN = 22;
+//DFRobotDFPlayerMini audioOutput;
+//SoftwareSerial mySoftwareSerial(10, 11); // Rx, Tx
+
+void setup() {
+  // put your setup code here, to run once:
+
+//  mySoftwareSerial.begin(9600);
+  Serial.begin(9600);
+
+  // Initializing haptic motors
+  HMDNeck.begin();
+  HMDNeck.Mode(0);
+  HMDNeck.MotorSelect(0x36);
+  HMDNeck.Library(7);
+
+  //Initializing Speaker
+//  if (!audioOutput.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+//    Serial.println(F("Unable to begin:"));
+//    Serial.println(F("1.Please recheck the connection!"));
+//    Serial.println(F("2.Please insert the SD card!"));
+//    while(true);
+//  }
+//  Serial.println(F("DFPlayer Mini online."));
+
+//  audioOutput.volume(25);  //Set volume value. From 0 to 30
+
+  pinMode(neckSensor_PIN, INPUT);
+  pinMode(neckHapticMotor_EN_PIN, OUTPUT);
+}
+
+void loop() {
+  // initialize haptic motors to not enabled
+  digitalWrite(neckHapticMotor_EN_PIN, LOW);
+  // Pulse Check Module
+  // 1. run audio to introduce the pulse check module 
+//  audioOutput.play(1);
+//  delay(11500);
+  // 2. once audio clip says to check pulse, run haptic motor to indicate location
+  int touchSensorReading = digitalRead(neckSensor_PIN);
+  Serial.println(touchSensorReading);
+  while (touchSensorReading == LOW) {
+    digitalWrite(neckHapticMotor_EN_PIN, HIGH);
+    HMDNeck.Waveform(5,90);
+    HMDNeck.go();
+    delay(500);
+    touchSensorReading = digitalRead(neckSensor_PIN);  
+  }
+      
+//  audioOutput.play(2); // tell users that device is moving to next module
+
+}
