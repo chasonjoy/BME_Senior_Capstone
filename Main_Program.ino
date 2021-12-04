@@ -14,8 +14,12 @@ const float calibration_factor = -7050.0;
 const int neckSensor_PIN = 8;
 const int chestComp_PIN = A0;
 const int noseClosure_PIN = A1;
-const int headTilt_PIN = 9;
+const int headTilt_PIN = 31;
 const int lungInf_PIN = A2;
+const int neckHapticMotor_EN_PIN = 22;
+const int chestHapticMotor_EN_PIN = 23;
+const int mouthHapticMotor_EN_PIN = 24;
+const int headHapticMotor_EN_PIN = 25;
 
 void setup() {
   Serial.begin(9600);
@@ -44,11 +48,21 @@ void setup() {
   pinMode(noseClosure_PIN, INPUT);
   pinMode(headTilt_PIN, INPUT);
   pinMode(lungInf_PIN, INPUT);
+  
+  pinMode(neckHapticMotor_EN_PIN, OUTPUT);
+  pinMode(chestHapticMotor_EN_PIN, OUTPUT);
+  pinMode(mouthHapticMotor_EN_PIN, OUTPUT);
+  pinMode(headHapticMotor_EN_PIN, OUTPUT);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  
+  // Initialize Haptic Motors to not enabled
+  digitalWrite(neckHapticMotor_EN_PIN, LOW);
+  digitalWrite(chestHapticMotor_EN_PIN, LOW);
+  digitalWrite(mouthHapticMotor_EN_PIN, LOW);
+  digitalWrite(headHapticMotor_EN_PIN, LOW);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Pulse Check Module
   // 1. run audio to introduce the pulse check module 
@@ -57,6 +71,7 @@ void loop() {
   // 2. once audio clip says to check pulse, run haptic motor to indicate location
   int touchSensorReading = digitalRead(neckSensor_PIN);
   while (touchSensorReading == LOW) {
+    digitalWrite(neckHapticMotor_EN_PIN, HIGH);
     HMDNeck.Waveform(1,145);
     HMDNeck.go();
     delay(500);
@@ -85,7 +100,7 @@ void loop() {
     audioOutput.play(4); // indicate that user compression is not enough and try again
   }
 
-  // 3. have user perform 15 successful compressions
+  // 3. have user perform 30 successful compressions
   audioOutput.play(5); //let user know previous compression is successful, now must perform 15 successful compressions
   int chestCompressions = 0;
   while (chestCompressions < 30) {
@@ -96,7 +111,7 @@ void loop() {
       delay(5000);
     }
     else {
-      audioOutput.play(4); // indicate unsuccessful compression;
+      audioOutput.play(7); // indicate unsuccessful compression;
       delay(5000);
     }
   }
@@ -107,7 +122,7 @@ void loop() {
 
   // Head Tilt, Nose Closure, and Breathing Check
   // 1. introduce breathing technique and let users know to tilt head first
-  audioOutput.play(7);
+  audioOutput.play(8);
   delay(15000);
   
   // 2. activate haptic motor at head region to indicate user to tilt head
@@ -118,14 +133,17 @@ void loop() {
     delay(1000);
     timerCount += 1;
     if (timerCount%3 == 0) {    // every three seconds of idle time, system lets user know to tilt head
-      audioOutput.play(8);
+      audioOutput.play(9);
     }
     headTiltReading = digitalRead(headTilt_PIN);
   }
   
   // 3. next nose closure
-  audioOutput.play(9);
+  audioOutput.play(10);
   delay(10000);
+
+  //initialize haptic motors to not enabled
+  digitalWrite(mouthHapticMotor_EN_PIN, LOW);
   
   float noseSensorReading = analogRead(noseClosure_PIN);
   while (noseSensorReading < 23) {
