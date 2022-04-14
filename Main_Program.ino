@@ -155,6 +155,8 @@ void lungInflationCheck() {
       delay(500);
     }
   }
+ 
+ digitalWrite(headHapticMotor_EN_PIN, LOW);  // disable haptic motors to not interrupt program speaking
 
   greenLEDs();
   delay(500);
@@ -224,6 +226,7 @@ void chestCompCheck() {
       break;
     }
   }
+  digitalWrite(chestHapticMotor_EN_PIN, LOW);
   greenLEDs();
   delay(1500);
   
