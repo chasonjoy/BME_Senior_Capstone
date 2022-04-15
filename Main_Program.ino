@@ -22,7 +22,7 @@ const int blueLED_PIN = 4;
 const int greenLED_PIN = 5;
 
 #define TCAADDR 0x70
-SFE_HMD_DRV2605L hapticMotor;
+SFE_HMD_DRV2605L HapticMotor;
 DFRobotDFPlayerMini audioOutput;
 SoftwareSerial mySoftwareSerial(10, 11); // Rx, Tx
 
@@ -70,14 +70,14 @@ void pulseModuleCheck() {
   bool rightTouchSensorReading = digitalRead(rightNeckSensor_PIN);
   bool leftTouchSensorReading = digitalRead(leftNeckSensor_PIN);
   Serial.print(rightTouchSensorReading); Serial.println(leftTouchSensorReading);
-  while (!rightTouchSensorReading && !leftTouchSensorReading) {
+  while (!rightTouchSensorReading /*&& !leftTouchSensorReading*/) {
     // Initialize and keep red LEDs on until user taps pulse point
     redLEDs();
     // enable haptic motors so they can start running
     digitalWrite(neckHapticMotor_EN_PIN, HIGH);
     // select and play specific waveform - will update in future iterations
     tcaselect(6);
-    hapticMotor.go();
+    HapticMotor.go();
     delay(500);
     // read condition of sensor again for while loop
     rightTouchSensorReading = digitalRead(rightNeckSensor_PIN);
@@ -127,7 +127,7 @@ void noseClosureCheck() {
 
 // Function for lung inflation check
 void lungInflationCheck() {
-  digitalWrite(mouthHapticMotor_EN_PIN, LOW);
+  digitalWrite(headHapticMotor_EN_PIN, LOW);
 
   // breathing technique
   audioOutput.play(8);
@@ -137,7 +137,7 @@ void lungInflationCheck() {
   Serial.println(lungInfSensor);
   while (lungInflations < 2) {
     redLEDs();
-    digitalWrite(mouthHapticMotor_EN_PIN, HIGH);
+    digitalWrite(headHapticMotor_EN_PIN, HIGH);
     tcaselect(7);
     HapticMotor.Waveform(1,145);
     HapticMotor.go();
@@ -146,17 +146,13 @@ void lungInflationCheck() {
     if (lungInfSensor <= 5.00) {
       lungInflations += 1;
       greenLEDs();
-      // audioOutput.play(11); // indicate good breath;
       delay(500);
     }
     else {
-      // audioOutput.play(12); // indicate lacking breath;
       redLEDs();
       delay(500);
     }
   }
- 
- digitalWrite(headHapticMotor_EN_PIN, LOW);  // disable haptic motors to not interrupt program speaking
 
   greenLEDs();
   delay(500);
@@ -174,6 +170,7 @@ void headTiltCheck() {
   delay(15000);
   
   // 2. activate haptic motor at head region to indicate user to tilt head
+  digitalWrite(headHapticMotor_EN_PIN, HIGH); 
   bool headTiltReading = digitalRead(headTilt_PIN);
   // Serial.println(headTiltReading);   // for debugging purposes
   int timerCount = 0;
@@ -210,50 +207,54 @@ void chestCompCheck() {
   // 1. Introduce chest compression technique
   // Enable chestHapticMotor
   digitalWrite(chestHapticMotor_EN_PIN, HIGH);
-  // Update on audio file: perform 5 compressions to get output
-  audioOutput.play(3);
-  delay(10000);
+  audioOutput.play(20);
+  delay(25000);
   signed int greenReading = analogRead(greenPistonLED);
   signed int redReading = analogRead(redPistonLED);
-  while (greenReading < 300 || redReading < 300) {
+  while (greenReading < 300 && redReading < 300) {
+    Serial.print(greenReading);
+    Serial.print("\t");
+    Serial.print(redReading);
     redLEDs();
     tcaselect(3);
     HapticMotor.Waveform(1,145);
-    HMDChest.go();
+    HapticMotor.go();
     delay(500);
     greenReading = analogRead(greenPistonLED);
-    if (chestCompSensorGood >= 374) {
+    if (greenReading >= 374) {
       break;
     }
   }
-  digitalWrite(chestHapticMotor_EN_PIN, LOW);
   greenLEDs();
   delay(1500);
   
   // 3. have user perform compressions for 60 s
-  // Update on audio file: "Notice how my eyes lit up...if they are green, then you've got the right compression and depth, but if you're red, then you'll have to speed up or slow down
-  audioOutput.play(5); //let user know previous compression is successful, now must perform 30 successful compressions
-  delay(6000);    // change time to reflect duration of Track 5
+  // Update on audio file: "Notice how my eyes light up...if they are green, then you've got the right compression and depth, but if they're red, then you'll have to speed up or slow down
+  audioOutput.play(21); //let user know previous compression is successful, now must perform 30 successful compressions
+  delay(12000);
+  
   // FSM 
-  unsigned long currentMillis = millis();
-  unsigned long startOfSong = millis();
-  unsigned long prevMillis = 0;
-  int chestCompCounter = 0;
-
   audioOutput.play(11);
   // play the song for a few seconds to get user used to metronome
   delay(5000);
-  
+  unsigned long currentMillis = millis();
+  unsigned long startOfSong = millis();
+  unsigned long prevMillis = 0;
   // perform checks based on user performance after acclimating to metronome
   while (currentMillis - startOfSong < 60000) {
      if (millis() - prevMillis == 500) {
       signed int currentGreenReading = analogRead(greenPistonLED);
       signed int currentRedReading = analogRead(redPistonLED);
-      if (currentGreenReading - currentRedReading > 0) {
+      if (currentGreenReading > 400) {
         greenLEDs();
       }
-      else if (currentGreenReading - currentRedReading < 0) {
+      
+      if (currentRedReading > 375) {
         redLEDs();
+      }
+      
+      if (currentGreenReading < 400 && currentRedReading > 375) {
+        turnOffLEDs();
       }
 
       // update values
@@ -277,8 +278,8 @@ void chestCompCheck() {
 
 // Function for Traditional CPR flow
 void traditionalCPR() {
-  audioOutput.play(##); // track 'Welcome to Traditional CPR. You would need to use this after the patient has been
-  delay(10000);         // unconscious for more time than you've seen them conscious...'
+  audioOutput.play(16); // track 'Welcome to Traditional CPR. You would need to use this after the patient has been
+  delay(85000);         // unconscious for more time than you've seen them conscious...'
 
   // Modules applicable to traditional CPR
   pulseModuleCheck();
@@ -287,22 +288,23 @@ void traditionalCPR() {
   noseClosureCheck();
   lungInflationCheck();
 
-  audioOutput.play(##) // track 'you have now completed traditional CPR training. IRL, you will have to
-  delay(7500);         // cycle b/w 30 chest compressions and 2 breaths'
+  audioOutput.play(17); // track 'you have now completed traditional CPR training. IRL, you will have to
+  delay(13500);         // cycle b/w 30 chest compressions and 2 breaths'
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Function for Hands-Only CPR flow
 void handsOnlyCPR() {
-  audioOutput.play(##)  // track 'Welcome to Hands-only CPR training. You can only use this training...'
-  delay(10000);
+  audioOutput.play(18);  // track 'Welcome to Hands-only CPR training. You can only use this training...'
+  delay(6500);
 
   // Modules applicable hands-only CPR
+  pulseModuleCheck();
   chestCompCheck();
 
-  audioOutput.play(##) // track 'you have now completed hands-only CPR training. IRL, you would continue this
-  delay(7500);         // CPR method indefinitely until the victim regains consciousness or you switch to traditional CPR'
+  audioOutput.play(19); // track 'you have now completed hands-only CPR training. IRL, you would continue this
+  delay(18500);         // CPR method indefinitely until the victim regains consciousness or you switch to traditional CPR'
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -326,15 +328,16 @@ void setup() {
   }
   Serial.println(F("DFPlayer Mini online."));
   
-  pinMode(neckSensor_PIN, INPUT); 
-  pinMode(chestComp_PIN, INPUT); 
+  pinMode(rightNeckSensor_PIN, INPUT); 
+  pinMode(leftNeckSensor_PIN, INPUT); 
+  pinMode(redPistonLED, INPUT); 
+  pinMode(greenPistonLED, INPUT); 
   pinMode(noseClosure_PIN, INPUT);
   pinMode(headTilt_PIN, INPUT);
   pinMode(lungInf_PIN, INPUT);
   
   pinMode(neckHapticMotor_EN_PIN, OUTPUT);
   pinMode(chestHapticMotor_EN_PIN, OUTPUT);
-  pinMode(mouthHapticMotor_EN_PIN, OUTPUT);
   pinMode(headHapticMotor_EN_PIN, OUTPUT);
 
   pinMode(redLED_PIN, OUTPUT);
@@ -351,13 +354,20 @@ void loop() {
   // Initialize Haptic Motors to not enabled
   digitalWrite(neckHapticMotor_EN_PIN, LOW);
   digitalWrite(chestHapticMotor_EN_PIN, LOW);
-  digitalWrite(mouthHapticMotor_EN_PIN, LOW);
+  digitalWrite(headHapticMotor_EN_PIN, LOW);
   digitalWrite(headHapticMotor_EN_PIN, LOW);
 
+  // test run for traditional CPR (circumventing menu select mode)
+//  int init = analogRead(noseClosure_PIN);
+//  if (init < 1) {traditionalCPR();};
+  
+  // Menu select
   int init = analogRead(noseClosure_PIN);
-  if (init < 12) {
-    audioOutput.play(##)  // ## = track should say 'Welcome! Please select which training you would like to learn'
-    delay(##) // ## = track duration - few seconds
+  Serial.println(init);
+  int timerCount = 0;
+  if (init < 1) {
+    audioOutput.play(12);  // ## = track should say 'Welcome! Please select which training mode you would like to learn...'
+    delay(13500);
 
     // Check to see if user presses pulse points
     bool modeSelectRight = digitalRead(rightNeckSensor_PIN);
@@ -367,7 +377,10 @@ void loop() {
       modeSelectLeft = digitalRead(leftNeckSensor_PIN);
       
       if (modeSelectLeft) {
-        audioOutput.play(##)  // ## = track 'Traditional CPR. Please confirm by pressing both pulse points'
+        audioOutput.play(14)  // ## = track 'Traditional CPR. Please confirm by pressing both of my pulse points'
+        delay(2500);
+        audioOutput.play(13); // ## = 'Please confirm by pressing both pulse points'
+        delay(2500);
         bool modeSelectRight = digitalRead(rightNeckSensor_PIN);
         bool modeSelectLeft = digitalRead(leftNeckSensor_PIN);
         if (modeSelectLeft && modeSelectRight) {
@@ -376,7 +389,10 @@ void loop() {
       }
 
       if (modeSelectRight) {
-        audioOutput.play(##)  // ## = track 'Hands-only CPR. Please confirm by pressing both pulse points'
+        audioOutput.play(15)  // ## = track 'Hands-only CPR.'
+        delay(2500);
+        audioOutput.play(13); // ## = 'Please confirm by pressing both pulse points'
+        delay(2500);
         bool modeSelectRight = digitalRead(rightNeckSensor_PIN);
         bool modeSelectLeft = digitalRead(leftNeckSensor_PIN);
         if (modeSelectLeft && modeSelectRight) {
