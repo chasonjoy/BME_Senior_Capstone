@@ -377,7 +377,7 @@ void loop() {
       modeSelectLeft = digitalRead(leftNeckSensor_PIN);
       
       if (modeSelectLeft) {
-        audioOutput.play(14)  // ## = track 'Traditional CPR. Please confirm by pressing both of my pulse points'
+        audioOutput.play(14);  // ## = track 'Traditional CPR. Please confirm by pressing both of my pulse points'
         delay(2500);
         audioOutput.play(13); // ## = 'Please confirm by pressing both pulse points'
         delay(2500);
@@ -389,7 +389,7 @@ void loop() {
       }
 
       if (modeSelectRight) {
-        audioOutput.play(15)  // ## = track 'Hands-only CPR.'
+        audioOutput.play(15);  // ## = track 'Hands-only CPR.'
         delay(2500);
         audioOutput.play(13); // ## = 'Please confirm by pressing both pulse points'
         delay(2500);
